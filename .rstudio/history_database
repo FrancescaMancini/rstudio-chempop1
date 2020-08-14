@@ -1,0 +1,3 @@
+1597398379179:dir.create("/data/data/bees/")
+1597398460948:dir.create("/data/model.output/bees/")
+1597398568606:packrat::init(options = list(auto.snapshot = TRUE))
