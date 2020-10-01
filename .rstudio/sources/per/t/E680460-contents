@@ -1,0 +1,157 @@
+######################################
+## Extract site identity from 
+## occ models
+## Author: Francesca Mancini
+## Adapted from Nick Isaac
+## Date created: 2020-07-30
+## Date modified:
+######################################
+
+library(sparta)
+library(rjags)
+library(R2jags)
+library(abind)
+library(dplyr)
+library(reshape2)
+
+
+
+# load data
+
+load("/data/model.output/bees/BOMBUS pascuorum.rdata")
+load("/data/data/bees/Bee_2017_Cleaned_Data.rdata")
+
+
+
+# extract the z matrix
+# first recompile the model
+# look at site identity, gridref or integer?
+str(out$model$data())
+# integer.. same as bees
+
+load.module("dic")
+out$model$recompile()
+
+
+# extract matrix
+z_samp <- rjags:::coda.samples(model=out$model,
+                               variable.names="z",
+                               n.iter=10, thin=3)
+
+
+# zs <- summary(z_samp)
+
+# get the CIs on occupancy for each site year combination
+zs <- abind(z_samp[[1]], z_samp[[2]], z_samp[[3]], along=3) # a 3 dimensional array
+zs <- melt(zs)
+str(zs) # var1=iteration, var2=year+site, var3=chain, value=occupancy
+
+
+
+# extract the year and site information
+id <- gsub(zs$Var2, pa="z\\[", repl="")
+id <- gsub(id, pa="\\]", repl="")
+id <- strsplit(id, ",")
+zs$site <- as.numeric(sapply(id, function(x) x[[1]]))
+zs$year <- as.numeric(sapply(id, function(x) x[[2]]))
+
+
+# fit a dummy model so that we can get the site identities
+set.seed(123)
+
+# recreate the BUGS data object from raw records
+visitData <- formatOccData(taxa=taxa_data$CONCEPT,
+                           site=taxa_data$TO_GRIDREF,
+                           survey=taxa_data$TO_STARTDATE)
+
+# run the model with these data for one species (very small number of iterations)
+
+results <- occDetFunc(taxa_name = "BOMBUS pascuorum",
+                      n_iterations = 50,
+                      burnin = 15, 
+                      occDetdata = visitData$occDetdata,
+                      spp_vis = visitData$spp_vis,
+                      modeltype = c("catlistlength", "halfcauchy", "ranwalk"),
+                      write_results = FALSE,
+                      return_data = TRUE)
+
+
+table(results$bugs_data$Site == out$model$data()$Site)
+# not the same number of sites and many FALSE!!
+
+# Add grid cell references and protected status
+included_sites <- unique(results$sites_included)
+zs$grid_ref <- included_sites[zs$site]
+# no NAs genrated but probably not right...
+
+
+
+
+
+### Nick's script ----
+pa_1990 <- read.csv("./uk_old_pa.csv")
+pa_1990$status <- "other"
+pa_1990$status[pa_1990$PA_cover > 0.1] <- "protected"
+pa_1990$status[pa_1990$PA_cover <= 0.01] <- "not_protected"
+zs <- merge(zs,pa_1990[,c("grid_ref","status")],by="grid_ref",all.x=TRUE)
+
+# Add regional code
+reg_codes <- read.csv("sq1km_country_id_UKonly_bordercells_tosmallercountry.csv", 
+                      header = TRUE) # add region data
+names(reg_codes)[1] <- "grid_ref"
+reg_codes[is.na(reg_codes)] <- 0
+reg_codes$region <- NA
+reg_codes$region[reg_codes$ENGLAND == 1] <- "ENG"
+reg_codes$region[reg_codes$SCOTLAND == 1] <- "SCOT"
+reg_codes$region[reg_codes$WALES == 1] <- "WAL"
+reg_codes$region[reg_codes$NORTHERN_IRELAND == 1] <- "NI"
+zs <- merge(zs,reg_codes[,c("grid_ref","region")],by="grid_ref",all.x=TRUE)
+
+na_zs <- zs[is.na(zs$status) == TRUE,]
+length(unique(na_zs$grid_ref))
+
+#### Here insert the matching information on Protected area status
+# in the absence of informatin I'll assign randomly to a three-level factor
+zs$stratum <- sample(1:3, size=nrow(zs), replace=TRUE) 
+
+# next create a dataset with the mean occupancy of each Stratum 
+# with one value per year:chain:iteration
+summ_stats1 <- as.data.frame(zs %>% 
+                               group_by(region, status, year, Var1, Var3) %>%
+                               summarise(
+                                 occupancy=mean(value)) %>%
+                               ungroup())
+
+# in reality first merge site with the sites_included vector, to get the gridref
+# then merge with stratum, where stratum defines the unique combinatin of 
+# Protected Area status, country and latitudinal band
+# NB with this option there is no need to have a single "stratum"
+# you could have a separate column for protected, latband and country.
+summ_stats1 <- as.data.frame(zs %>% 
+                               group_by(region, status, year, Var1, Var3) %>%
+                               summarise(occupancy=mean(value)) %>%
+                               ungroup())
+
+# (but maybe subset first by the years to be compared)
+
+# calculate the posterior distribtuion for each stratum:year combination
+summ_stats2 <- as.data.frame(summ_stats1 %>% 
+                               #group_by(country, protected, lat_band, year) %>%
+                               group_by(stratum, year) %>%
+                               summarise(
+                                 mean=mean(occupancy),
+                                 lowerCI = quantile(occupancy, 0.025),
+                                 upperCI = quantile(occupancy, 0.975)
+                               ) %>%
+                               ungroup())
+
+# print out the values for first and last year
+subset(summ_stats2, year %in% c(1, max(year)))
+
+# use summ_stats1 to define the posterior distribution of differences in occupancy between sets of strata
+# also, summ_stats1 will be useful for summarising across species 
+# 
+
+# NB use summ_stats1 to calculate differences between pairs of years
+
+

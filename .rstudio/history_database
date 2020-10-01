@@ -33,3 +33,122 @@
 1597401780091:library(reshape2)
 1597401843190:load("/data/model.output/bees/BOMBUS pascuorum.rdata")
 1597401882764:load("/data/data/bees/Bee_2017_Cleaned_Data.rdata")
+1597401937829:# extract the z matrix
+1597401937840:# first recompile the model
+1597401937851:# look at site identity, gridref or integer?
+1597401937862:str(out$model$data())
+1597401974517:names(out)
+1597402012056:View(out)
+1597402270260:?occDetFunc
+1597402411032:str(out)
+1597402479158:attr(out, "metadata")
+1597402606193:load.module("dic")
+1597402607888:out$model$recompile()
+1597403296267:# extract matrix
+1597403296279:z_samp <- rjags:::coda.samples(model=out$model,
+1597403296291:variable.names="z",
+1597403296303:n.iter=10, thin=3)
+1597403384293:# get the CIs on occupancy for each site year combination
+1597403384305:zs <- abind(z_samp[[1]], z_samp[[2]], z_samp[[3]], along=3) # a 3 dimensional array
+1597403386210:zs <- melt(zs)
+1597403388063:str(zs) # var1=iteration, var2=year+site, var3=chain, value=occupancy
+1597403398039:# extract the year and site information
+1597403398050:id <- gsub(zs$Var2, pa="z\\[", repl="")
+1597403411251:id <- gsub(id, pa="\\]", repl="")
+1597403416142:id <- strsplit(id, ",")
+1597403423738:zs$site <- as.numeric(sapply(id, function(x) x[[1]]))
+1597403430967:zs$year <- as.numeric(sapply(id, function(x) x[[2]]))
+1597403439661:# fit a dummy model so that we can get the site identities
+1597403439671:set.seed(123)
+1597403443041:# recreate the BUGS data object from raw records
+1597403443065:visitData <- formatOccData(taxa=taxa_data$CONCEPT,
+1597403443083:site=taxa_data$TO_GRIDREF,
+1597403443100:survey=taxa_data$TO_ENDDATE)
+1597403462744:View(taxa_data)
+1597403480308:str(taxa_data)
+1597403495091:# recreate the BUGS data object from raw records
+1597403495103:visitData <- formatOccData(taxa=taxa_data$CONCEPT,
+1597403495115:site=taxa_data$TO_GRIDREF,
+1597403495127:survey=taxa_data$TO_STARTDATE)
+1597403519860:results <- occDetFunc(taxa_name = "Dip_1233",
+1597403519872:n_iterations = 50,
+1597403519882:burnin = 15,
+1597403519893:occDetdata = visitData$occDetdata,
+1597403519904:spp_vis = visitData$spp_vis,
+1597403519913:modeltype = c("catlistlength", "halfcauchy", "ranwalk"),
+1597403519925:write_results = FALSE,
+1597403519935:return_data = TRUE)
+1597403539729:View(taxa_data)
+1597403548333:results <- occDetFunc(taxa_name = "BOMBUS pascuorum",
+1597403548345:n_iterations = 50,
+1597403548356:burnin = 15,
+1597403548367:occDetdata = visitData$occDetdata,
+1597403548378:spp_vis = visitData$spp_vis,
+1597403548389:modeltype = c("catlistlength", "halfcauchy", "ranwalk"),
+1597403548400:write_results = FALSE,
+1597403548410:return_data = TRUE)
+1597411735304:library(sparta)
+1597411737383:library(rjags)
+1597411737434:library(R2jags)
+1597411737478:library(abind)
+1597411737497:library(dplyr)
+1597411737520:library(reshape2)
+1597411737564:# load data
+1597411737590:load("/data/model.output/bees/BOMBUS pascuorum.rdata")
+1597411739817:load("/data/data/bees/Bee_2017_Cleaned_Data.rdata")
+1597411740089:# extract the z matrix
+1597411740099:# first recompile the model
+1597411740108:# look at site identity, gridref or integer?
+1597411740118:str(out$model$data())
+1597411740150:# integer.. same as bees
+1597411740168:load.module("dic")
+1597411740180:out$model$recompile()
+1597412307963:# extract matrix
+1597412307973:z_samp <- rjags:::coda.samples(model=out$model,
+1597412307983:variable.names="z",
+1597412307994:n.iter=10, thin=3)
+1597412379304:# zs <- summary(z_samp)
+1597412379322:# get the CIs on occupancy for each site year combination
+1597412379332:zs <- abind(z_samp[[1]], z_samp[[2]], z_samp[[3]], along=3) # a 3 dimensional array
+1597412379495:zs <- melt(zs)
+1597412379907:str(zs) # var1=iteration, var2=year+site, var3=chain, value=occupancy
+1597412379970:# extract the year and site information
+1597412379981:id <- gsub(zs$Var2, pa="z\\[", repl="")
+1597412385436:id <- gsub(id, pa="\\]", repl="")
+1597412389974:id <- strsplit(id, ",")
+1597412397238:zs$site <- as.numeric(sapply(id, function(x) x[[1]]))
+1597412404669:zs$year <- as.numeric(sapply(id, function(x) x[[2]]))
+1597412410390:# fit a dummy model so that we can get the site identities
+1597412410401:set.seed(123)
+1597412410420:# recreate the BUGS data object from raw records
+1597412410430:visitData <- formatOccData(taxa=taxa_data$CONCEPT,
+1597412410440:site=taxa_data$TO_GRIDREF,
+1597412410449:survey=taxa_data$TO_STARTDATE)
+1597412427837:# run the model with these data for one species (very small number of iterations)
+1597412427857:results <- occDetFunc(taxa_name = "BOMBUS pascuorum",
+1597412427868:n_iterations = 50,
+1597412427881:burnin = 15,
+1597412427892:occDetdata = visitData$occDetdata,
+1597412427904:spp_vis = visitData$spp_vis,
+1597412427914:modeltype = c("catlistlength", "halfcauchy", "ranwalk"),
+1597412427924:write_results = FALSE,
+1597412427933:return_data = TRUE)
+1600699388845:list.files("/data-s3/")
+1601541339853:packrat::init(options = list(auto.snapshot = TRUE, vcs.ignore.src = TRUE))
+1601541389406:list.files("/data-s3/")
+1601541757685:install.packages("rjags")
+1601541834213:install.packages("rjags")
+1601541856693:install.packages("R2jags")
+1601541872568:install.packages("abind")
+1601541883979:install.packages("dplyr")
+1601542134476:install.packages("reshape2")
+1601542161091:withr::with_envvar(c(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true"),
+1601542161104:remotes::install_github('BiologicalRecordsCentre/sparta'))
+1601542412130:library(sparta)
+1601542414187:library(rjags)
+1601542414263:library(R2jags)
+1601542414303:library(abind)
+1601542414322:library(dplyr)
+1601542414344:library(reshape2)
+1601542433872:load("/data/model.output/bees/BOMBUS pascuorum.rdata")
+1601542437671:load("/data/data/bees/Bee_2017_Cleaned_Data.rdata")

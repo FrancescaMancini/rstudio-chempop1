@@ -31,7 +31,7 @@
         "description" : "A wrapper for `roxygen`'s `roxygen2::roxygenize()`",
         "interactive" : false,
         "name" : "Document a package.",
-        "ordinal" : 4,
+        "ordinal" : 5,
         "package" : "devtools",
         "title" : ""
     },
@@ -40,7 +40,7 @@
         "description" : "Calculate and report the test coverage for the current package, using `devtools::test_coverage()`.",
         "interactive" : false,
         "name" : "Report test coverage for a package",
-        "ordinal" : 3,
+        "ordinal" : 4,
         "package" : "devtools",
         "title" : ""
     },
@@ -49,7 +49,7 @@
         "description" : "Calculate and report test coverage for the current test file, using `devtools::test_coverage_file()`.",
         "interactive" : false,
         "name" : "Report test coverage for a file",
-        "ordinal" : 2,
+        "ordinal" : 3,
         "package" : "devtools",
         "title" : ""
     },
@@ -58,7 +58,7 @@
         "description" : "Run the current test file, using `devtools::test_file()`.",
         "interactive" : false,
         "name" : "Run a test file",
-        "ordinal" : 1,
+        "ordinal" : 2,
         "package" : "devtools",
         "title" : ""
     },
@@ -67,7 +67,7 @@
         "description" : "Compare and validate graphical test cases using vdiffr",
         "interactive" : true,
         "name" : "Manage visual test cases",
-        "ordinal" : 5,
+        "ordinal" : 1,
         "package" : "vdiffr",
         "title" : ""
     }
